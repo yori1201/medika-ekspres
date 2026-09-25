@@ -48,7 +48,7 @@ function phone_(v){let s=String(v||'').replace(/\D/g,'');if(s.startsWith('0'))s=
   }else if(dist<=c.AUTO_RADIUS_MAX_KM){
     price=c.REGULAR_CHARGE+Math.ceil(dist-c.REGULAR_RADIUS_KM)*c.EXTRA_KM_RATE;
   }
-  return {ok:true,distance_km:dist,patient_price:price,formatted_address:geo.results[0].formatted_address||addr};
+  return {ok:true,distance_km:dist,patient_price:price,formatted_address:geo.results[0].formatted_address||addr,lat:loc.lat,lng:loc.lng};
 }
 
 function voucherApply_(p){
