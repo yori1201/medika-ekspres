@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#078cff"><title>Pesan Pengantaran — MEDIKA EKSPRES</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="v3 v3-form-page">
+<header class="v3-header form-header"><a href="index.html"><img src="assets/logo.png" alt="MEDIKA EKSPRES"></a><a class="back-home" href="index.html">← Beranda</a></header>
+<main class="v3-form-shell">
+  <div class="form-intro"><span class="kicker">PENGANTARAN OBAT</span><h1>Pesan Pengantaran</h1><p>Lengkapi data pengantaran obat Anda.</p></div>
+  <section class="v3-form-card">
+    <form id="orderForm">
+      <section class="wizard-step" data-step="0">
+        <h2>Data Penerima</h2><p class="step-sub">Siapa yang akan menerima obat?</p>
+        <label><span>Nama pasien / penerima *</span><input id="name" required autocomplete="name" placeholder="Contoh: Budi Santoso"></label>
+        <label><span>Nomor WhatsApp aktif *</span><input id="whatsapp" required inputmode="tel" autocomplete="tel" pattern="[+0-9\s-]{9,20}" placeholder="Contoh: 081234567890"></label>
+        <label><span>Nama Dokter *</span><input id="doctor" required placeholder="Contoh: dr. Andi"></label>
+        <label><span>Poliklinik *</span><input id="polyclinic" required placeholder="Contoh: Poli Penyakit Dalam"></label>
+        <input id="hospital" value="RSUI" type="hidden">
+      </section>
+
+      <section class="wizard-step" data-step="1" hidden>
+        <h2>Alamat Pengantaran</h2><p class="step-sub">Masukkan alamat tujuan selengkap mungkin.</p>
+        <div id="savedAddresses" class="saved-addresses" hidden></div>
+        <label><span>Alamat lengkap *</span><textarea id="address" rows="4" required placeholder="Jalan, nomor rumah, RT/RW dan patokan"></textarea></label>
+        <label><span>Kecamatan *</span><select id="kecamatan" required autocomplete="address-level3"><option value="">Pilih kecamatan</option></select></label>
+        <label><span>Kelurahan *</span><select id="kelurahan" required autocomplete="address-level4" disabled><option value="">Pilih kecamatan terlebih dahulu</option></select></label>
+        <label><span>Patokan tambahan <small>(opsional)</small></span><input id="landmark" placeholder="Contoh: pagar putih"></label>
+        <div id="zoneHint" class="info-box" hidden></div>
+      </section>
+
+      <section class="wizard-step" data-step="2" hidden>
+        <h2>Ringkasan & Tarif</h2><p class="step-sub">Periksa tujuan dan total pengantaran.</p>
+        <div class="summary-address"><span>Tujuan</span><b id="summaryAddress">—</b></div>
+        <div class="fare-box"><div id="fareText">Jarak dan tarif belum tersedia.</div></div>
+        <p id="fareHelp" class="step-help"></p>
+        <label class="voucher-field"><span>Voucher Diskon <small>(opsional)</small></span><div class="voucher-input-row"><input id="voucherCode" placeholder="Masukkan kode voucher dari kami"><button type="button" class="secondary-btn" id="applyVoucher">Terapkan</button></div><small class="step-help">Kode voucher diberikan langsung oleh tim MEDIKA EKSPRES.</small></label>
+      </section>
+
+      <section class="wizard-step" data-step="3" hidden>
+        <h2>Pembayaran & Konfirmasi</h2><p class="step-sub">Pilih metode pembayaran, lalu kirim pesanan.</p>
+        <div class="payment-options">
+          <label class="pay-card"><input type="radio" name="payment" value="QRIS" required><span><b>QRIS</b><small>Praktis & cepat</small></span></label>
+          <label class="pay-card"><input type="radio" name="payment" value="Cash"><span><b>Tunai</b><small>Sesuai mekanisme layanan</small></span></label>
+        </div>
+        <div id="paymentDetail" class="info-box">Pilih metode pembayaran.</div>
+        <label class="consent"><input id="consent" type="checkbox" required><span>Saya setuju data digunakan MEDIKA EKSPRES untuk mengatur pengantaran obat.</span></label>
+      </section>
+
+      <p id="formError" class="wizard-error" role="alert" hidden></p>
+      <div class="wizard-actions"><button type="button" id="prevStep" class="secondary-btn" hidden>Kembali</button><button type="button" id="nextStep" class="primary-btn">Lanjut →</button><button type="submit" id="sendOrder" class="primary-btn" hidden>Kirim Pesanan</button></div>
+    </form>
+  </section>
+</main>
+
+<div id="qrisModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qrisTitle">
+  <div class="modal-card qris-card">
+    <button id="closeQris" class="modal-close" type="button" aria-label="Tutup">×</button>
+    <span class="kicker">PEMBAYARAN QRIS</span>
+    <h2 id="qrisTitle">Scan QRIS untuk membayar</h2>
+    <p class="qris-note">QR di bawah masih <b>dummy untuk pilot</b> dan tidak dapat digunakan untuk pembayaran nyata.</p>
+    <div class="qris-amount"><span>Total pembayaran</span><strong id="qrisAmount">Rp0</strong></div>
+    <img id="qrisImage" class="qris-image" src="assets/qris-dummy.svg" alt="QRIS dummy MEDIKA EKSPRES">
+    <div class="qris-timer"><span>Selesaikan pembayaran dalam</span><strong id="qrisCountdown">10:00</strong></div>
+    <a id="downloadQris" class="secondary-btn link-btn" href="assets/qris-dummy.svg" download="MEDIKA_EKSPRES_QRIS_DUMMY.svg">Simpan / Download QRIS</a>
+    <button id="confirmQris" class="primary-btn" type="button">Saya Sudah Bayar</button>
+    <small id="qrisStatus" class="step-help">Setelah dikonfirmasi, pesanan dibuat dan pembayaran menunggu verifikasi petugas.</small>
+  </div>
+</div>
+
+<div id="successModal" class="modal hidden"><div class="modal-card"><div class="success-icon">✓</div><h2 id="successTitle">Pesanan berhasil diterima</h2><p>Nomor pesanan</p><strong id="successOrderId">ME-XXXXXX-001</strong><p id="successPaymentNote">Tim MEDIKA EKSPRES akan memproses pesanan setelah obat dinyatakan siap oleh farmasi.</p><a id="successWa" class="primary-btn link-btn" href="#" target="_blank">Hubungi MEDIKA EKSPRES</a><button id="closeModal" class="secondary-btn" type="button">Tutup</button></div></div>
+
+<script src="config.js?v=3-alpha-r3"></script><script src="app.js?v=3-alpha-r3"></script>
+</body></html>
