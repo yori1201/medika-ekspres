@@ -52,14 +52,15 @@ async function applyVoucher(){
   if(!roadDistanceVerified||!livePatientPrice){alert("Hitung tarif dulu sebelum pakai voucher.");return}
   try{
     const r=await apiPost({action:"voucherApply",voucherCode:code,baseFare:livePatientPrice});
-    if(r.ok&&r.discount!==undefined){
+    console.log("Voucher apply response:",r);
+    if(r&&r.ok&&r.discount!==undefined){
       activeVoucherCode=code;
       livePatientPrice=Number(r.finalFare);
       renderFare();
       $("#voucherCode").value="";
-      alert("Voucher diterapkan! Diskon: "+rupiah(r.discount));
+      alert("Voucher diterapkan! Diskon: "+rupiah(r.discount)+". Harga menjadi: "+rupiah(livePatientPrice));
     }else{
-      alert(r.error||"Voucher tidak valid.");
+      alert(r&&r.error?r.error:"Voucher tidak valid atau tidak dapat digunakan.");
     }
   }catch(e){alert("Gagal memproses voucher: "+e.message);}
 }
