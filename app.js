@@ -81,8 +81,15 @@ function showSuccess(r,payment){
 }
 async function createOrder(payment,button){
   const original=button?.textContent||""; if(button){button.disabled=true;button.textContent="Memproses…"}
-  try{const r=await apiPost(buildOrderPayload(payment));showSuccess(r,payment);return true}
-  catch(err){alert("Pesanan belum tersimpan: "+err.message);return false}
+  try{
+    const r=await apiPost(buildOrderPayload(payment));
+    if(r.duplicate){
+      alert("Pesanan ini sudah pernah dikirim. Nomor: "+r.orderId);
+      return false;
+    }
+    showSuccess(r,payment);
+    return true;
+  }catch(err){alert("Pesanan belum tersimpan: "+err.message);return false}
   finally{if(button){button.disabled=false;button.textContent=original}}
 }
 function updateQrisCountdown(){
