@@ -12,6 +12,7 @@
   <section class="v3-form-card">
     <form id="orderForm">
       <section class="wizard-step" data-step="0">
+
         <h2>Data Penerima</h2><p class="step-sub">Siapa yang akan menerima obat?</p>
         <label><span>Nama pasien / penerima *</span><input id="name" required autocomplete="name" placeholder="Contoh: Budi Santoso"></label>
         <label><span>Nomor WhatsApp aktif *</span><input id="whatsapp" required inputmode="tel" autocomplete="tel" pattern="[+0-9\s-]{9,20}" placeholder="Contoh: 081234567890"></label>
@@ -19,7 +20,7 @@
         <input id="hospital" value="RSUI" type="hidden">
       </section>
 
-      <section class="wizard-step" data-step="1" hidden>
+      <section class="wizard-step" data-step="1">
         <h2>Alamat Pengantaran</h2><p class="step-sub">Masukkan alamat tujuan selengkap mungkin.</p>
         <div id="savedAddresses" class="saved-addresses" hidden></div>
         <label><span>Alamat lengkap *</span><textarea id="address" rows="4" required placeholder="Jalan, nomor rumah, RT/RW dan patokan"></textarea></label>
@@ -29,7 +30,7 @@
         <div id="zoneHint" class="info-box" hidden></div>
       </section>
 
-      <section class="wizard-step" data-step="2" hidden>
+      <section class="wizard-step" data-step="2">
         <h2>Ringkasan & Tarif</h2><p class="step-sub">Periksa tujuan dan total pengantaran.</p>
         <div class="summary-address"><span>Tujuan</span><b id="summaryAddress">—</b></div>
         <div class="fare-box"><div id="fareText">Jarak dan tarif belum tersedia.</div></div>
@@ -37,18 +38,23 @@
         <label class="voucher-field"><span>Voucher Diskon <small>(opsional)</small></span><div class="voucher-input-row"><input id="voucherCode" placeholder="Masukkan kode voucher dari kami"><button type="button" class="secondary-btn" id="applyVoucher">Terapkan</button></div><small class="step-help">Kode voucher diberikan langsung oleh tim MEDIKA EKSPRES.</small></label>
       </section>
 
-      <section class="wizard-step" data-step="3" hidden>
+      <section class="wizard-step" data-step="3">
         <h2>Pembayaran & Konfirmasi</h2><p class="step-sub">Pilih metode pembayaran, lalu kirim pesanan.</p>
         <div class="payment-options">
           <label class="pay-card"><input type="radio" name="payment" value="QRIS" required><span><b>QRIS</b><small>Praktis & cepat</small></span></label>
           <label class="pay-card"><input type="radio" name="payment" value="Tunai"><span><b>Tunai</b><small>Sesuai mekanisme layanan</small></span></label>
         </div>
         <div id="paymentDetail" class="info-box">Pilih metode pembayaran.</div>
+        <div class="payment-summary">
+          <div><span>Tarif Pengantaran</span><strong id="paymentBaseFare">Rp0</strong></div>
+          <div id="paymentDiscountRow" hidden><span>Potongan Voucher</span><strong id="paymentDiscount">−Rp0</strong></div>
+          <div class="payment-total"><span>Total Bayar</span><strong id="paymentTotal">Rp0</strong></div>
+        </div>
         <label class="consent"><input id="consent" type="checkbox" required><span>Saya setuju data digunakan MEDIKA EKSPRES untuk mengatur pengantaran obat.</span></label>
       </section>
 
       <p id="formError" class="wizard-error" role="alert" hidden></p>
-      <div class="wizard-actions"><button type="button" id="prevStep" class="secondary-btn" hidden>Kembali</button><button type="button" id="nextStep" class="primary-btn">Lanjut →</button><button type="submit" id="sendOrder" class="primary-btn" hidden>Kirim Pesanan</button></div>
+      <div class="wizard-actions"><button type="submit" id="sendOrder" class="primary-btn">Kirim Pesanan</button></div>
     </form>
   </section>
 </main>
