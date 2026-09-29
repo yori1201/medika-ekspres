@@ -32,19 +32,22 @@
 
       <section class="wizard-step" data-step="2">
         <h2>Ringkasan & Tarif</h2><p class="step-sub">Periksa tujuan dan total pengantaran.</p>
-        <div class="summary-address"><span>Tujuan</span><b id="summaryAddress">—</b></div>
-        <div class="fare-box"><div id="fareText">Jarak dan tarif belum tersedia.</div></div>
-        <p id="fareHelp" class="step-help"></p>
-        <label class="voucher-field"><span>Voucher Diskon <small>(opsional)</small></span><div class="voucher-input-row"><input id="voucherCode" placeholder="Masukkan kode voucher dari kami"><button type="button" class="secondary-btn" id="applyVoucher">Terapkan</button></div><small class="step-help">Kode voucher diberikan langsung oleh tim MEDIKA EKSPRES.</small></label>
+        <div class="summary-address"><span>Tujuan</span><strong id="summaryAddress">—</strong></div>
+        <div id="fareText" class="fare-box">Jarak dan tarif belum tersedia.</div>
+        <p id="fareHelp" class="step-help">Tarif dihitung otomatis setelah alamat lengkap diisi.</p>
       </section>
 
       <section class="wizard-step" data-step="3">
         <h2>Pembayaran & Konfirmasi</h2><p class="step-sub">Pilih metode pembayaran, lalu kirim pesanan.</p>
         <div class="payment-options">
           <label class="pay-card"><input type="radio" name="payment" value="QRIS" required><span><b>QRIS</b><small>Praktis & cepat</small></span></label>
-          <label class="pay-card"><input type="radio" name="payment" value="Tunai"><span><b>Tunai</b><small>Sesuai mekanisme layanan</small></span></label>
+          <label class="pay-card"><input type="radio" name="payment" value="Tunai"><span><b>Tunai</b><small>Bayar saat terima</small></span></label>
         </div>
-        <div id="paymentDetail" class="info-box">Pilih metode pembayaran.</div>
+        <p id="paymentDetail" class="step-help">Pilih metode pembayaran.</p>
+        <div class="voucher-row">
+          <label><span>Kode voucher <small>(opsional)</small></span><input id="voucherCode" placeholder="Masukkan kode" autocomplete="off"></label>
+          <button type="button" id="applyVoucher" class="secondary-btn">Terapkan</button>
+        </div>
         <div class="payment-summary">
           <div><span>Tarif Pengantaran</span><strong id="paymentBaseFare">Rp0</strong></div>
           <div id="paymentDiscountRow" hidden><span>Potongan Voucher</span><strong id="paymentDiscount">−Rp0</strong></div>
@@ -69,7 +72,7 @@
     <img id="qrisImage" class="qris-image" src="assets/qris-dummy.svg" alt="QRIS dummy MEDIKA EKSPRES">
     <div class="qris-timer"><span>Selesaikan pembayaran dalam</span><strong id="qrisCountdown">10:00</strong></div>
     <a id="downloadQris" class="secondary-btn link-btn" href="assets/qris-dummy.svg" download="MEDIKA_EKSPRES_QRIS_DUMMY.svg">Simpan / Download QRIS</a>
-    <button id="confirmQris" class="primary-btn" type="button">Saya Sudah Bayar</button>
+    <button id="confirmQris" class="primary-btn" type="button">Konfirmasi Pembayaran</button>
     <small id="qrisStatus" class="step-help">Setelah dikonfirmasi, pesanan dibuat dan pembayaran menunggu verifikasi petugas.</small>
   </div>
 </div>
@@ -77,4 +80,5 @@
 <div id="successModal" class="modal hidden"><div class="modal-card"><div class="success-icon">✓</div><h2 id="successTitle">Pesanan berhasil diterima</h2><p>Nomor pesanan</p><strong id="successOrderId">ME-XXXXXX-001</strong><p id="successPaymentNote">Tim MEDIKA EKSPRES akan memproses pesanan setelah obat dinyatakan siap oleh farmasi.</p><a id="successWa" class="primary-btn link-btn" href="#" target="_blank">Hubungi MEDIKA EKSPRES</a><button id="closeModal" class="secondary-btn" type="button">Tutup</button></div></div>
 
 <script src="config.js?v=3-alpha-r3"></script><script src="mock-voucher.js?v=1"></script><script src="app.js?v=3-alpha-r3"></script>
-</body></html>
+</body>
+</html>
