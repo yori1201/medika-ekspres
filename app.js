@@ -1,5 +1,5 @@
 const C=window.MEDIKA_CONFIG,$=id=>document.getElementById(id);
-let estimatedDistance=null,roadDistanceVerified=false,selectedAddressId="",livePatientPrice=null,currentStep=0,addressTimer=null,deliverySeq=0,qrisTimer=null,qrisSeconds=600,activeVoucherCode="";
+let estimatedDistance=null,roadDistanceVerified=false,selectedAddressId="",livePatientPrice=null,basePatientPrice=null,discountAmount=0,currentStep=0,addressTimer=null,deliverySeq=0,qrisTimer=null,qrisSeconds=600,activeVoucherCode="",lat=null,lng=null;
 const steps=[...document.querySelectorAll(".wizard-step")];
 const DEPOK_AREAS={
   "Pancoran Mas":["Depok","Depok Jaya","Pancoran Mas","Mampang","Rangkapan Jaya Baru","Rangkapan Jaya"],
@@ -29,12 +29,12 @@ function rupiah(n){return new Intl.NumberFormat("id-ID",{style:"currency",curren
 function normalizePhone(v){let s=String(v||"").replace(/\D/g,"");if(s.startsWith("0"))s="62"+s.slice(1);return s}
 async function apiPost(payload){if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(C.SHEETS_ENDPOINT||""))throw Error("Endpoint backend belum dikonfigurasi.");const r=await fetch(C.SHEETS_ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload),redirect:"follow"});if(!r.ok)throw Error("Backend HTTP "+r.status);const j=await r.json();if(!j.success&&!j.ok)throw Error(j.error||"Backend gagal memproses permintaan.");return j.data!==undefined?j.data:j}
 
-function resetDelivery(){estimatedDistance=null;roadDistanceVerified=false;livePatientPrice=null;activeVoucherCode="";const z=$("zoneHint");z.hidden=true;z.textContent="";renderFare()}
-function renderFare(){const el=$("fareText"),help=$("fareHelp");if(!el)return;if(!Number.isFinite(estimatedDistance)){el.innerHTML="Jarak dan tarif belum tersedia.";help.textContent="Tarif dihitung otomatis setelah alamat lengkap diisi.";return}if(estimatedDistance>15||!Number.isFinite(livePatientPrice)){el.innerHTML=`<span>Jarak Pengantaran</span><strong>${estimatedDistance.toFixed(2)} km</strong><hr><b>Tarif memerlukan konfirmasi petugas.</b>`;help.textContent="Pembayaran belum dapat dilanjutkan.";return}let fh=`<span>Jarak Pengantaran</span><strong>${estimatedDistance.toFixed(2)} km</strong><hr><span>Tarif Pengantaran</span><strong class="price">${rupiah(livePatientPrice)}</strong>`;if(activeVoucherCode)fh+=`<hr><small class="voucher-tag">Voucher: ${activeVoucherCode}</small>`;el.innerHTML=fh;help.textContent=""}
+function resetDelivery(){estimatedDistance=null;roadDistanceVerified=false;livePatientPrice=null;basePatientPrice=null;discountAmount=0;activeVoucherCode="";lat=null;lng=null;const z=$("zoneHint");z.hidden=true;z.textContent="";renderFare()}
+function renderFare(){const el=$("fareText"),help=$("fareHelp");if(!el)return;if(!Number.isFinite(estimatedDistance)){el.innerHTML="Jarak dan tarif belum tersedia.";help.textContent="Tarif dihitung otomatis setelah alamat lengkap diisi.";return}if(estimatedDistance>15||!Number.isFinite(livePatientPrice)){el.innerHTML=`<span>Jarak Pengantaran</span><strong>${estimatedDistance.toFixed(2)} km</strong><hr><b>Tarif memerlukan konfirmasi petugas.</b>`;help.textContent="Pembayaran belum dapat dilanjutkan.";return}let fh=`<span>Jarak Pengantaran</span><strong>${estimatedDistance.toFixed(2)} km</strong>`;if(activeVoucherCode&&Number(discountAmount)>0)fh+=`<hr><span>Tarif Pengantaran</span><strong>${rupiah(basePatientPrice)}</strong><hr><span>Potongan Voucher</span><strong>−${rupiah(discountAmount)}</strong>`;else fh+=`<hr><span>Tarif Pengantaran</span><strong>${rupiah(basePatientPrice??livePatientPrice)}</strong>`;fh+=`<hr><span>Total Bayar</span><strong class="price">${rupiah(livePatientPrice)}</strong>`;el.innerHTML=fh;help.textContent=""}
 function showCalculating(){const el=$("fareText"),help=$("fareHelp");if(el)el.innerHTML="<span>Menghitung jarak dan tarif…</span>";if(help)help.textContent="";const z=$("zoneHint");z.hidden=false;z.textContent="Menghitung jarak dan tarif…"}
-async function calculateDelivery(address){const seq=++deliverySeq;showCalculating();try{const payload={action:"calculateDelivery",full_address:address};const r=await apiPost(payload);if(seq!==deliverySeq)return;const dist=Number(r.distance_km),price=Number(r.patient_price);estimatedDistance=dist;livePatientPrice=Number.isFinite(price)&&price>0?price:null;roadDistanceVerified=Number.isFinite(dist);lat=r.lat||null;lng=r.lng||null;$("summaryAddress").textContent=address||"Lokasi perangkat";renderFare();const z=$("zoneHint");z.hidden=false;z.textContent=dist>15?`Jarak ${dist.toFixed(2)} km — memerlukan konfirmasi petugas.`:`Jarak ${dist.toFixed(2)} km • Tarif ${rupiah(livePatientPrice)}`}
+async function calculateDelivery(address){const seq=++deliverySeq;showCalculating();try{const payload={action:"calculateDelivery",full_address:address};const r=await apiPost(payload);if(seq!==deliverySeq)return;const dist=Number(r.distance_km),price=Number(r.patient_price);estimatedDistance=dist;basePatientPrice=Number.isFinite(price)&&price>0?price:null;livePatientPrice=basePatientPrice;discountAmount=0;activeVoucherCode="";roadDistanceVerified=Number.isFinite(dist);lat=r.lat||null;lng=r.lng||null;$("summaryAddress").textContent=address||"Lokasi perangkat";renderFare();const z=$("zoneHint");z.hidden=false;z.textContent=dist>15?`Jarak ${dist.toFixed(2)} km — memerlukan konfirmasi petugas.`:`Jarak ${dist.toFixed(2)} km • Tarif ${rupiah(livePatientPrice)}`}
 catch(e){if(seq!==deliverySeq)return;resetDelivery();const z=$("zoneHint");z.hidden=false;z.textContent="Jarak dan tarif belum dapat dihitung. Periksa kembali alamat.";console.warn(e)}}
-function deliveryAddress(){return [$("address").value.trim(), $("kelurahan").value.trim(), $("kecamatan").value.trim()].filter(Boolean).join(", ")}
+function deliveryAddress(){return [$("address").value.trim(), $("landmark").value.trim(), $("kelurahan").value.trim(), $("kecamatan").value.trim()].filter(Boolean).join(", ")}
 function scheduleAddressCalculation(){selectedAddressId="";resetDelivery();clearTimeout(addressTimer);const address=deliveryAddress();if($("address").value.trim().length<8||!$("kelurahan").value.trim()||!$("kecamatan").value.trim())return;addressTimer=setTimeout(()=>calculateDelivery(address),900)}
 ["address","kelurahan","kecamatan"].forEach(id=>$(id)?.addEventListener("input",scheduleAddressCalculation));
 ["kelurahan","kecamatan"].forEach(id=>$(id)?.addEventListener("change",scheduleAddressCalculation));
@@ -51,10 +51,11 @@ async function applyVoucher(){
   if(!code){alert("Masukkan kode voucher dulu.");return}
   if(!roadDistanceVerified||!livePatientPrice){alert("Hitung tarif dulu sebelum pakai voucher.");return}
   try{
-    const r=await apiPost({action:"voucherApply",voucherCode:code,baseFare:livePatientPrice});
+    const r=await apiPost({action:"voucherApply",voucherCode:code,baseFare:basePatientPrice});
     console.log("Voucher apply response:",r);
     if(r&&r.ok&&r.discount!==undefined){
       activeVoucherCode=code;
+      discountAmount=Number(r.discount||0);
       livePatientPrice=Number(r.finalFare);
       renderFare();
       $("#voucherCode").value="";
@@ -69,7 +70,7 @@ $("nextStep")?.addEventListener("click",async()=>{if(!validateStep())return;if(c
 $("prevStep")?.addEventListener("click",()=>{if(currentStep>0){currentStep--;renderStep()}});
 
 function buildOrderPayload(payment){
-  const payload={action:"createOrder",orderId:"ME-"+Date.now().toString(36).toUpperCase()+"-"+Math.floor(Math.random()*9999),name:$("name").value.trim(),whatsapp:normalizePhone($("whatsapp").value),doctor:$("doctor").value.trim(),address:deliveryAddress(),area:$("kecamatan").value.trim(),paymentMethod:payment,distanceKm:roadDistanceVerified?estimatedDistance:0,lat:lat||0,lng:lng||0,consent:$("consent").checked};
+  const payload={action:"createOrder",orderId:"ME-"+Date.now().toString(36).toUpperCase()+"-"+Math.floor(Math.random()*9999),name:$("name").value.trim(),whatsapp:normalizePhone($("whatsapp").value),doctor:$("doctor").value.trim(),address:deliveryAddress(),landmark:$("landmark").value.trim(),area:$("kecamatan").value.trim(),paymentMethod:payment,distanceKm:roadDistanceVerified?estimatedDistance:0,lat:lat||0,lng:lng||0,consent:$("consent").checked};
   if(activeVoucherCode)payload.voucherCode=activeVoucherCode;
   return payload;
 }
