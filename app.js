@@ -1,5 +1,5 @@
 const C=window.MEDIKA_CONFIG,$=id=>document.getElementById(id);
-let estimatedDistance=null,roadDistanceVerified=false,selectedAddressId="",livePatientPrice=null,basePatientPrice=null,discountAmount=0,currentStep=0,addressTimer=null,deliverySeq=0,qrisTimer=null,qrisSeconds=600,activeVoucherCode="",lat=null,lng=null;
+let estimatedDistance=null,roadDistanceVerified=false,selectedAddressId="",livePatientPrice=null,basePatientPrice=null,discountAmount=0,addressTimer=null,deliverySeq=0,qrisTimer=null,qrisSeconds=600,activeVoucherCode="",lat=null,lng=null;
 const DEPOK_AREAS={
   "Pancoran Mas":["Depok","Depok Jaya","Pancoran Mas","Mampang","Rangkapan Jaya Baru","Rangkapan Jaya"],
   "Cimanggis":["Harjamukti","Curug","Tugu","Mekarsari","Pasir Gunung Selatan","Cisalak Pasar"],
