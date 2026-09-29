@@ -5,10 +5,10 @@ window.MEDIKA_CONFIG = {
   AUTO_RADIUS_MAX_KM: 15,
   REGULAR_CHARGE: 25000,
   EXTRA_KM_RATE: 4000,
-  OUTER_ZONE_SERVICE_FEE: 10000,
+  OUTER_ZONE_SERVICE_FEE: 4000,
   PIC_WHATSAPP: "6285159991286",
   PAYMENT: {
     QRIS: "QRIS MEDIKA EKSPRES — pembayaran menunggu konfirmasi admin.",
-    Cash: "Pembayaran tunai sesuai mekanisme layanan."
+    Tunai: "Pembayaran tunai sesuai mekanisme layanan."
   }
 };
