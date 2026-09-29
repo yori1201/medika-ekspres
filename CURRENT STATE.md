@@ -1,34 +1,34 @@
 # MEDIKA EKSPRES — CURRENT STATE
 
-## Audit date
+## Audit / sync date
 2026-09-29
 
 ## Repositories
-- Frontend/main web: yori1201/medika-ekspres
-- Backend source: yori1201/medika-ekspres-backend
+- Frontend/main web: `yori1201/medika-ekspres` (branch `main`)
+- Backend live: Google Apps Script Web App (source **not** fully mirrored in this repo)
+- Historical backend repo `yori1201/medika-ekspres-backend`: not accessible (404)
 
-## Observed architecture
-- Static frontend HTML/CSS/JS.
-- Frontend calls a Google Apps Script `/exec` endpoint.
+## Observed architecture (runtime-verified)
+- Static frontend HTML/CSS/JS (Vercel production + local static server).
+- Frontend calls production Apps Script `/exec` endpoint from `config.js`.
 - Google Sheets is the operational database.
-- Apps Script performs geocoding, road-distance calculation, order persistence, vouchers, and dispatcher operations.
-- Lalamove quotation logic exists in the backend source and is being mirrored into the Apps Script source tree.
+- Live backend accepts `doctor_name` + `full_address` (not the obsolete `doctor`/`address`/`area` contract in archived `Code.gs`).
 
-## Important reconciliation
-There are multiple historical implementations in the repositories. Historical Markdown files are reference material, not automatic implementation instructions.
+## Production endpoint
+```
+https://script.google.com/macros/s/AKfycbwl3LG_IW3XVA1IOizlOfcczFUVOZEOYqgILt38iYbZC6-AOPCkaZxeB9O-Dzd1U8Q-/exec
+```
 
-The current locked pricing is newer than several existing code paths.
+## Database
+- Name: `MEDIKA_EKSPRES_Database_V2_3_Pilot`
+- ID: `1S3b6JX73G3df_XFwdT3QrKiaaC1TknxRsqSfypHNwdw`
+- Orders tab: authoritative
 
-## Current risks found
-1. Old pricing formula remained in frontend/backend.
-2. Existing backend code used an internal outer-zone service-fee/margin-cap formula that conflicts with the current locked pricing.
-3. Patient form still contained a Poliklinik field although the locked flow removed it.
-4. Address landmark was not included in the address string sent for routing.
-5. Server persistence previously accepted client distance/coordinates instead of making the server calculation authoritative.
-6. Frontend and backend repositories contain different generations of Apps Script architecture.
-7. Live public site could not be fetched from the current audit environment; deployment/runtime verification therefore remains pending.
+## Source drift (important)
+GitHub `apps-script/Code.gs` ≠ live Apps Script.  
+See `SOURCE_OF_TRUTH.md` and `apps-script/README.md`.
 
-## This branch
-`fix/medika-baseline-2026-09-29`
-
-Changes are intentionally isolated from `main` pending runtime verification.
+## Local test mode
+Local frontend may point to the production Apps Script endpoint for controlled user testing.  
+Label: **LOCAL FRONTEND → PRODUCTION BACKEND**.  
+Do not deploy repository Apps Script to production without reconciliation.
