@@ -9,6 +9,6 @@ window.MEDIKA_CONFIG = {
   PIC_WHATSAPP: "6285159991286",
   PAYMENT: {
     QRIS: "QRIS MEDIKA EKSPRES — pembayaran menunggu konfirmasi admin.",
-    Cash: "Pembayaran tunai sesuai mekanisme layanan."
+    Tunai: "Pembayaran tunai sesuai mekanisme layanan."
   }
 };
