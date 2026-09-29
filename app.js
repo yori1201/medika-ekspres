@@ -70,7 +70,7 @@ $("nextStep")?.addEventListener("click",async()=>{if(!validateStep())return;if(c
 $("prevStep")?.addEventListener("click",()=>{if(currentStep>0){currentStep--;renderStep()}});
 
 function buildOrderPayload(payment){
-  const payload={action:"createOrder",orderId:"ME-"+Date.now().toString(36).toUpperCase()+"-"+Math.floor(Math.random()*9999),name:$("name").value.trim(),whatsapp:normalizePhone($("whatsapp").value),doctor:$("doctor").value.trim(),address:deliveryAddress(),landmark:$("landmark").value.trim(),area:$("kecamatan").value.trim(),paymentMethod:payment,distanceKm:roadDistanceVerified?estimatedDistance:0,lat:lat||0,lng:lng||0,consent:$("consent").checked};
+  const payload={action:"createOrder",orderId:"ME-"+Date.now().toString(36).toUpperCase()+"-"+Math.floor(Math.random()*9999),name:$("name").value.trim(),whatsapp:normalizePhone($("whatsapp").value),doctor_name:$("doctor").value.trim(),full_address:deliveryAddress(),paymentMethod:payment,consent:$("consent").checked};
   if(activeVoucherCode)payload.voucherCode=activeVoucherCode;
   return payload;
 }
