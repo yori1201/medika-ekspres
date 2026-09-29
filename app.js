@@ -1,6 +1,5 @@
 const C=window.MEDIKA_CONFIG,$=id=>document.getElementById(id);
 let estimatedDistance=null,roadDistanceVerified=false,selectedAddressId="",livePatientPrice=null,basePatientPrice=null,discountAmount=0,currentStep=0,addressTimer=null,deliverySeq=0,qrisTimer=null,qrisSeconds=600,activeVoucherCode="",lat=null,lng=null;
-const steps=[...document.querySelectorAll(".wizard-step")];
 const DEPOK_AREAS={
   "Pancoran Mas":["Depok","Depok Jaya","Pancoran Mas","Mampang","Rangkapan Jaya Baru","Rangkapan Jaya"],
   "Cimanggis":["Harjamukti","Curug","Tugu","Mekarsari","Pasir Gunung Selatan","Cisalak Pasar"],
@@ -45,29 +44,31 @@ document.querySelectorAll('input[name="payment"]').forEach(x=>x.addEventListener
 }));
 $("applyVoucher")?.addEventListener("click",applyVoucher);
 
-function renderStep(){steps.forEach((el,i)=>el.hidden=i!==currentStep);$("prevStep").hidden=currentStep===0;$("nextStep").hidden=currentStep===3;$("sendOrder").hidden=currentStep!==3;if(currentStep===2){$("summaryAddress").textContent=deliveryAddress()||"—";renderFare()}window.scrollTo({top:0,behavior:"smooth"})}
+function renderStep(){renderFare();updatePaymentSummary();}
 async function applyVoucher(){
   const code=$("voucherCode").value.trim();
   if(!code){alert("Masukkan kode voucher dulu.");return}
-  if(!roadDistanceVerified||!livePatientPrice){alert("Hitung tarif dulu sebelum pakai voucher.");return}
+  if(!roadDistanceVerified||!Number.isFinite(basePatientPrice)){alert("Hitung tarif dulu sebelum pakai voucher.");return}
   try{
     const r=await apiPost({action:"voucherApply",voucherCode:code,baseFare:basePatientPrice});
-    console.log("Voucher apply response:",r);
     if(r&&r.ok&&r.discount!==undefined){
       activeVoucherCode=code;
-      discountAmount=Number(r.discount||0);
-      livePatientPrice=Number(r.finalFare);
+      discountAmount=Math.min(Number(r.discount||0),Number(basePatientPrice||0));
+      livePatientPrice=Math.max(0,Number(basePatientPrice||0)-discountAmount);
       renderFare();
-      $("#voucherCode").value="";
-      alert("Voucher diterapkan! Diskon: "+rupiah(r.discount)+". Harga menjadi: "+rupiah(livePatientPrice));
+      $("voucherCode").value="";
+      alert("Voucher diterapkan. Total bayar: "+rupiah(livePatientPrice));
     }else{
       alert(r&&r.error?r.error:"Voucher tidak valid atau tidak dapat digunakan.");
     }
   }catch(e){alert("Gagal memproses voucher: "+e.message);}
 }
-function validateStep(){for(const input of [...steps[currentStep].querySelectorAll("input,textarea,select")].filter(x=>x.required)){if(!input.checkValidity()){input.reportValidity();input.focus();return false}}return true}
-$("nextStep")?.addEventListener("click",async()=>{if(!validateStep())return;if(currentStep===1){const address=deliveryAddress();if(!roadDistanceVerified){clearTimeout(addressTimer);await calculateDelivery(address)}if(!roadDistanceVerified){alert("Jarak dan tarif belum dapat dihitung. Periksa kembali alamat.");return}if(estimatedDistance>15||!Number.isFinite(livePatientPrice)){alert("Tarif alamat ini memerlukan konfirmasi petugas dan belum dapat dilanjutkan ke pembayaran.");return}}if(currentStep<3){currentStep++;renderStep()}});
-$("prevStep")?.addEventListener("click",()=>{if(currentStep>0){currentStep--;renderStep()}});
+function validateForm(){
+  for(const input of [...$("orderForm").querySelectorAll("input,textarea,select")].filter(x=>x.required)){
+    if(!input.checkValidity()){input.reportValidity();input.focus();return false}
+  }
+  return true;
+}
 
 function buildOrderPayload(payment){
   const payload={action:"createOrder",orderId:"ME-"+Date.now().toString(36).toUpperCase()+"-"+Math.floor(Math.random()*9999),name:$("name").value.trim(),whatsapp:normalizePhone($("whatsapp").value),doctor_name:$("doctor").value.trim(),full_address:deliveryAddress(),paymentMethod:payment,consent:$("consent").checked};
@@ -105,7 +106,7 @@ function openQris(){
 }
 function closeQris(){clearInterval(qrisTimer);qrisTimer=null;$("qrisModal").classList.add("hidden")}
 $("orderForm")?.addEventListener("submit",async e=>{
-  e.preventDefault();if(!validateStep()||!roadDistanceVerified||!Number.isFinite(livePatientPrice)){alert("Lengkapi data, jarak, dan tarif terlebih dahulu.");return}
+  e.preventDefault();if(!validateForm()||!roadDistanceVerified||!Number.isFinite(livePatientPrice)){alert("Lengkapi data, jarak, dan tarif terlebih dahulu.");return}
   const payment=document.querySelector('input[name="payment"]:checked')?.value;
   if(payment==="QRIS"){openQris();return}
   await createOrder(payment,$("sendOrder"));
@@ -113,4 +114,4 @@ $("orderForm")?.addEventListener("submit",async e=>{
 $("confirmQris")?.addEventListener("click",async()=>{if(qrisSeconds<=0)return;const ok=await createOrder("QRIS",$("confirmQris"));if(ok)closeQris()});
 $("closeQris")?.addEventListener("click",closeQris);
 $("closeModal")?.addEventListener("click",()=>$("successModal").classList.add("hidden"));
-initDepokAreas();renderFare();renderStep();
+initDepokAreas();renderFare();updatePaymentSummary();
