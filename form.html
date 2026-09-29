@@ -38,12 +38,7 @@
       </section>
 
       <section class="wizard-step" data-step="3">
-        <h2>Pembayaran & Konfirmasi</h2><p class="step-sub">Pilih metode pembayaran, lalu kirim pesanan.</p>
-        <div class="payment-options">
-          <label class="pay-card"><input type="radio" name="payment" value="QRIS" required><span><b>QRIS</b><small>Praktis & cepat</small></span></label>
-          <label class="pay-card"><input type="radio" name="payment" value="Tunai"><span><b>Tunai</b><small>Bayar saat terima</small></span></label>
-        </div>
-        <p id="paymentDetail" class="step-help">Pilih metode pembayaran.</p>
+        <h2>Pembayaran & Konfirmasi</h2><p class="step-sub">Periksa total, lalu pilih metode pembayaran.</p>
         <div class="voucher-row">
           <label><span>Kode voucher <small>(opsional)</small></span><input id="voucherCode" placeholder="Masukkan kode" autocomplete="off"></label>
           <button type="button" id="applyVoucher" class="secondary-btn">Terapkan</button>
@@ -53,6 +48,12 @@
           <div id="paymentDiscountRow" hidden><span>Potongan Voucher</span><strong id="paymentDiscount">−Rp0</strong></div>
           <div class="payment-total"><span>Total Bayar</span><strong id="paymentTotal">Rp0</strong></div>
         </div>
+        <p class="payment-method-label">Metode pembayaran</p>
+        <div class="payment-options">
+          <label class="pay-card"><input type="radio" name="payment" value="QRIS" required><span><b>QRIS</b><small>Praktis & cepat</small></span></label>
+          <label class="pay-card"><input type="radio" name="payment" value="Tunai"><span><b>Tunai</b><small>Bayar saat terima</small></span></label>
+        </div>
+        <p id="paymentDetail" class="step-help">Pilih metode pembayaran.</p>
         <label class="consent"><input id="consent" type="checkbox" required><span>Saya setuju data digunakan MEDIKA EKSPRES untuk mengatur pengantaran obat.</span></label>
       </section>
 
