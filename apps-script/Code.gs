@@ -15,7 +15,7 @@ function doPost(e){const lock=LockService.getScriptLock();try{lock.waitLock(1500
 function route_(p){const c=cfg_();let lat=Number(p.lat),lng=Number(p.lng),formatted='';if(!Number.isFinite(lat)||!Number.isFinite(lng)){const query=[p.address,p.area,'Depok','Indonesia'].filter(Boolean).join(', ');const geo=Maps.newGeocoder().setRegion('id').geocode(query);if(!geo.results||!geo.results.length)throw Error('Alamat tidak ditemukan.');const loc=geo.results[0].geometry.location;lat=loc.lat;lng=loc.lng;formatted=geo.results[0].formatted_address||String(p.address||'');}const dir=Maps.newDirectionFinder().setOrigin(c.HOSPITAL.lat,c.HOSPITAL.lng).setDestination(lat,lng).setMode(Maps.DirectionFinder.Mode.DRIVING).getDirections();if(!dir.routes||!dir.routes.length)throw Error('Rute jalan tidak ditemukan.');const km=dir.routes[0].legs[0].distance.value/1000;return {ok:true,lat,lng,distanceKm:Math.round(km*100)/100,formattedAddress:formatted,operationalZone:zone_(lat,lng,p.area)};}
 function zone_(lat,lng,area){const a=String(area||'').trim();if(a)return a.toUpperCase();const c=cfg_(),dy=lat-c.HOSPITAL.lat,dx=lng-c.HOSPITAL.lng,ang=(Math.atan2(dx,dy)*180/Math.PI+360)%360;if(ang<45||ang>=315)return 'UTARA';if(ang<135)return 'TIMUR';if(ang<225)return 'SELATAN';return 'BARAT';}
 function patientLookup_(p){const wa=phone_(p.whatsapp),name=String(p.name||'').trim().toLowerCase();if(wa.length<10||name.length<2)return {ok:false,addresses:[]};const ps=sheet_(SHEETS.PATIENTS,PATIENT_HEADERS),as=sheet_(SHEETS.ADDRESSES,ADDRESS_HEADERS);if(ps.getLastRow()<2)return {ok:true,addresses:[]};const pv=ps.getRange(2,1,ps.getLastRow()-1,PATIENT_HEADERS.length).getValues(),patient=pv.find(r=>phone_(r[2])===wa&&String(r[1]||'').trim().toLowerCase()===name);if(!patient)return {ok:true,addresses:[]};const av=as.getLastRow()<2?[]:as.getRange(2,1,as.getLastRow()-1,ADDRESS_HEADERS.length).getValues();return {ok:true,patientId:patient[0],addresses:av.filter(r=>r[1]===patient[0]&&String(r[10]).toLowerCase()!=='no').map(r=>({addressId:r[0],label:r[2],address:r[3],landmark:r[4],area:r[5],lat:r[6],lng:r[7],distanceKm:r[8],operationalZone:r[9]}))};}
-function createOrder_(p){['orderId','name','whatsapp','doctor','address','area','paymentMethod'].forEach(k=>{if(!String(p[k]||'').trim())throw Error('Data wajib belum lengkap: '+k);});if(p.consent!==true)throw Error('Persetujuan data wajib.');const km=Number(p.distanceKm);if(!Number.isFinite(km)||km<=0)throw Error('Jarak jalan belum tervalidasi.');const c=cfg_();let base=km<=c.REGULAR_RADIUS_KM?c.REGULAR_CHARGE:(km<=c.AUTO_RADIUS_MAX_KM?c.REGULAR_CHARGE+Math.ceil(km-c.REGULAR_RADIUS_KM)*c.EXTRA_KM_RATE:'');const manual=km>c.AUTO_RADIUS_MAX_KM;let discount=0,voucherCode='';if(!manual&&p.voucherCode){voucherCode=String(p.voucherCode).trim();try{discount=voucherDiscount_(voucherCode,Number(base));}catch(e){throw Error('Voucher: '+e.message);}}const finalCharge=manual?'':Number(base)-discount;const operationalZone=zone_(Number(p.lat),Number(p.lng),p.area);p.operationalZone=operationalZone;const orders=sheet_(SHEETS.ORDERS,ORDER_HEADERS);if(find_(orders,1,p.orderId))return {ok:true,duplicate:true,orderId:p.orderId};const patient=upsertPatient_(p),address=upsertAddress_(p,patient.id);orders.appendRow([p.orderId,new Date(),patient.id,safe_(p.name),phone_(p.whatsapp),safe_(p.doctor),address.id,safe_(p.address),safe_(p.area),Number(p.lat),Number(p.lng),km,safe_(operationalZone),safe_(operationalZone),manual?'':finalCharge,manual?'Ya':'Tidak','',manual?c.OUTER_ZONE_SERVICE_FEE:0,safe_(p.paymentMethod),'Pending','Waiting','Pending','','',safe_(voucherCode),discount,manual?'':base]);return {ok:true,orderId:p.orderId,patientId:patient.id,addressId:address.id,finalFare:finalCharge,discountAmount:discount,operationalZone:operationalZone};}
+function createOrder_(p){['orderId','name','whatsapp','doctor','address','area','paymentMethod'].forEach(k=>{if(!String(p[k]||'').trim())throw Error('Data wajib belum lengkap: '+k);});if(p.consent!==true)throw Error('Persetujuan data wajib.');const km=Number(p.distanceKm);if(!Number.isFinite(km)||km<=0)throw Error('Jarak jalan belum tervalidasi.');const c=cfg_();let authoritative;try{authoritative=calculateDelivery_({full_address:p.address});}catch(e){throw Error('Validasi tarif gagal: '+e.message);}const base=Number(authoritative.patient_price||0);const manual=false;let discount=0,voucherCode='';if(!manual&&p.voucherCode){voucherCode=String(p.voucherCode).trim();try{discount=voucherDiscount_(voucherCode,Number(base));}catch(e){throw Error('Voucher: '+e.message);}}const finalCharge=Math.max(0,Number(base)-discount);const operationalZone=zone_(Number(p.lat),Number(p.lng),p.area);p.operationalZone=operationalZone;const orders=sheet_(SHEETS.ORDERS,ORDER_HEADERS);if(find_(orders,1,p.orderId))return {ok:true,duplicate:true,orderId:p.orderId};const patient=upsertPatient_(p),address=upsertAddress_(p,patient.id);orders.appendRow([p.orderId,new Date(),patient.id,safe_(p.name),phone_(p.whatsapp),safe_(p.doctor),address.id,safe_(p.address),safe_(p.area),Number(authoritative.lat||p.lat),Number(authoritative.lng||p.lng),Number(authoritative.distance_km),safe_(operationalZone),safe_(operationalZone),finalCharge,'Tidak',Number(authoritative.courier_cost||0),0,safe_(p.paymentMethod),'Pending','Waiting','Pending','','',safe_(voucherCode),discount,base]);return {ok:true,orderId:p.orderId,patientId:patient.id,addressId:address.id,finalFare:finalCharge,baseFare:base,discountAmount:discount,operationalZone:operationalZone,courierCost:Number(authoritative.courier_cost||0),quotationId:authoritative.quotation_id||''};}
 function upsertPatient_(p){const sh=sheet_(SHEETS.PATIENTS,PATIENT_HEADERS),wa=phone_(p.whatsapp);let row=0;if(sh.getLastRow()>=2){const v=sh.getRange(2,1,sh.getLastRow()-1,PATIENT_HEADERS.length).getValues(),i=v.findIndex(r=>phone_(r[2])===wa);if(i>=0)row=i+2;}if(row){sh.getRange(row,2).setValue(safe_(p.name));sh.getRange(row,5).setValue(new Date());return {id:sh.getRange(row,1).getValue(),row};}const id='PT-'+Utilities.getUuid().slice(0,8).toUpperCase();sh.appendRow([id,safe_(p.name),wa,new Date(),new Date(),'Active']);return {id,row:sh.getLastRow()};}
 function upsertAddress_(p,patientId){const sh=sheet_(SHEETS.ADDRESSES,ADDRESS_HEADERS);if(p.addressId){const row=find_(sh,1,String(p.addressId));if(row&&sh.getRange(row,2).getValue()===patientId){sh.getRange(row,13).setValue(new Date());return {id:p.addressId,row};}}let row=0;if(sh.getLastRow()>=2){const v=sh.getRange(2,1,sh.getLastRow()-1,ADDRESS_HEADERS.length).getValues(),key=norm_(p.address),i=v.findIndex(r=>r[1]===patientId&&norm_(r[3])===key);if(i>=0)row=i+2;}if(row){sh.getRange(row,4,1,9).setValues([[safe_(p.address),safe_(p.landmark),safe_(p.area),Number(p.lat),Number(p.lng),Number(p.distanceKm),safe_(p.operationalZone),'Yes',new Date()]]);return {id:sh.getRange(row,1).getValue(),row};}const id='ADR-'+Utilities.getUuid().slice(0,8).toUpperCase();sh.appendRow([id,patientId,'Rumah',safe_(p.address),safe_(p.landmark),safe_(p.area),Number(p.lat),Number(p.lng),Number(p.distanceKm),safe_(p.operationalZone),'Yes',new Date(),new Date()]);return {id,row:sh.getLastRow()};}
 function activeVouchers_(){const sh=sheet_(SHEETS.VOUCHERS,VOUCHER_HEADERS);if(sh.getLastRow()<2){sh.appendRow(['PILOT10K','NOMINAL',10000,25000,10000,new Date(),new Date(Date.now()+90*86400000),100,0,'Yes','Promo pilot']);}const now=new Date();return sh.getRange(2,1,sh.getLastRow()-1,VOUCHER_HEADERS.length).getValues().filter(r=>String(r[9]).toLowerCase()==='yes'&&(!r[5]||new Date(r[5])<=now)&&(!r[6]||new Date(r[6])>=now)&&(Number(r[7]||0)===0||Number(r[8]||0)<Number(r[7]))).map(r=>({code:r[0],type:String(r[1]).toUpperCase(),value:Number(r[2]),minTransaction:Number(r[3]||0),maxDiscount:Number(r[4]||0)}));}
@@ -27,8 +27,8 @@ function recalcVoucher_(sh,row){const base=Number(sh.getRange(row,28).getValue()
 function orderStatus_(p){const sh=sheet_(SHEETS.ORDERS,ORDER_HEADERS),id=String(p.orderId||''),row=find_(sh,1,id);if(!row)return {ok:true,found:false,orderId:id};return {ok:true,found:true,orderId:id,finalFare:sh.getRange(row,15).getValue(),manualQuote:String(sh.getRange(row,16).getValue()).toLowerCase()==='ya',providerFare:sh.getRange(row,17).getValue(),serviceFee:sh.getRange(row,18).getValue(),voucherCode:sh.getRange(row,26).getValue(),discountAmount:sh.getRange(row,27).getValue(),baseFare:sh.getRange(row,28).getValue(),pharmacyStatus:sh.getRange(row,21).getValue(),deliveryStatus:sh.getRange(row,22).getValue()};}
 function find_(sh,col,val){if(!val||sh.getLastRow()<2)return 0;const r=sh.getRange(2,col,sh.getLastRow()-1,1).createTextFinder(String(val)).matchEntireCell(true).findNext();return r?r.getRow():0;}
 function phone_(v){let s=String(v||'').replace(/\D/g,'');if(s.startsWith('0'))s='62'+s.slice(1);return s;}function norm_(v){return String(v||'').toLowerCase().replace(/\s+/g,' ').trim();}function calculateDelivery_(p){
-  const addr=p.full_address||'';
-  if(!addr||addr.trim().length<5)throw Error('Alamat tidak valid.');
+  const addr=String(p.full_address||'').trim();
+  if(!addr||addr.length<5)throw Error('Alamat tidak valid.');
   const c=cfg_();
   const query=[addr,'Depok','Indonesia'].filter(Boolean).join(', ');
   const geo=Maps.newGeocoder().setRegion('id').geocode(query);
@@ -42,15 +42,36 @@ function phone_(v){let s=String(v||'').replace(/\D/g,'');if(s.startsWith('0'))s=
   if(!dir.routes||!dir.routes.length)throw Error('Rute tidak ditemukan.');
   const km=dir.routes[0].legs[0].distance.value/1000;
   const dist=Math.round(km*100)/100;
-  let price='';
+  if(dist>15)throw Error('Di luar radius layanan maksimal 15 km.');
+  let patientPrice;
+  let courierCost=0;
+  let quotationId='';
+  let pricingMode='REGULAR';
   if(dist<=c.REGULAR_RADIUS_KM){
-    price=c.REGULAR_CHARGE;
-  }else if(dist<=c.AUTO_RADIUS_MAX_KM){
-    price=c.REGULAR_CHARGE+Math.ceil(dist-c.REGULAR_RADIUS_KM)*c.EXTRA_KM_RATE;
+    patientPrice=Number(c.REGULAR_CHARGE);
+  }else{
+    if(typeof courierQuote_!=='function')throw Error('Mesin quotation kurir belum tersedia di backend.');
+    const quote=courierQuote_(c.HOSPITAL,{lat:loc.lat,lng:loc.lng,address:geo.results[0].formatted_address||addr});
+    courierCost=Number(quote.courierCost);
+    if(!Number.isFinite(courierCost)||courierCost<0)throw Error('Ongkir aktual kurir tidak valid.');
+    const additionalKm=Math.ceil(dist-c.REGULAR_RADIUS_KM);
+    patientPrice=Math.round(courierCost+(additionalKm*Number(c.EXTRA_KM_RATE)));
+    quotationId=quote.quotationId||'';
+    pricingMode='LALAMOVE_QUOTE_PLUS_DISTANCE';
   }
-  return {ok:true,distance_km:dist,patient_price:price,formatted_address:geo.results[0].formatted_address||addr,lat:loc.lat,lng:loc.lng};
+  return {
+    ok:true,
+    distance_km:dist,
+    patient_price:patientPrice,
+    base_fare:patientPrice,
+    courier_cost:courierCost,
+    quotation_id:quotationId,
+    pricing_mode:pricingMode,
+    formatted_address:geo.results[0].formatted_address||addr,
+    lat:loc.lat,
+    lng:loc.lng
+  };
 }
-
 function voucherApply_(p){
   const code=String(p.voucherCode||'').trim();
   const baseFare=Number(p.baseFare||0);
@@ -62,23 +83,17 @@ function voucherApply_(p){
 
 function safe_(v){const s=String(v==null?'':v).trim().slice(0,500);return /^[=+@\-@\t\r]/.test(s)?"'"+s:s;}
 function getCourierQuotePreview_(p){
-  const lat=Number(p.latitude||0),lng=Number(p.longitude||0),distanceKm=Number(p.distance_km||0),fullAddress=String(p.full_address||'').trim();
+  const lat=Number(p.latitude||p.lat||0),lng=Number(p.longitude||p.lng||0),distanceKm=Number(p.distance_km||0),fullAddress=String(p.full_address||'').trim();
   if(!Number.isFinite(lat)||!Number.isFinite(lng))throw Error('Koordinat tujuan tidak valid.');
   if(!Number.isFinite(distanceKm)||distanceKm<=0)throw Error('Jarak pengantaran tidak valid.');
   if(distanceKm>15)throw Error('Di luar radius layanan maksimal 15 km.');
   const c=cfg_();
-  const additionalKm=Math.max(0,Math.ceil(distanceKm-c.REGULAR_RADIUS_KM));
-  const referenceFare=c.REGULAR_CHARGE+additionalKm*c.EXTRA_KM_RATE;
-  const pickup=c.HOSPITAL;
-  const destination={lat,lng,address:fullAddress};
-  if(typeof courierQuote_==='function'){
-    const quote=courierQuote_(pickup,destination);
-    const courierCost=Number(quote.courier_cost??quote.price??quote.amount??quote.total??quote.totalFee??0);
-    if(!Number.isFinite(courierCost)||courierCost<0)throw Error('Ongkir aktual kurir tidak valid.');
-    const patientPrice=Math.min(referenceFare,courierCost+c.OUTER_ZONE_SERVICE_FEE);
-    const margin=patientPrice-courierCost;
-    if(margin>c.OUTER_ZONE_SERVICE_FEE)throw Error('Margin melebihi batas.');
-    return{ok:true,distance_km:distanceKm,patient_price:Math.round(patientPrice)};
-  }
-  return{ok:true,distance_km:distanceKm,patient_price:referenceFare};
+  if(distanceKm<=c.REGULAR_RADIUS_KM)return{ok:true,distance_km:distanceKm,patient_price:Number(c.REGULAR_CHARGE),base_fare:Number(c.REGULAR_CHARGE),discount_amount:0,total_bayar:Number(c.REGULAR_CHARGE)};
+  if(typeof courierQuote_!=='function')throw Error('Mesin quotation kurir belum tersedia di backend.');
+  const quote=courierQuote_(c.HOSPITAL,{lat,lng,address:fullAddress});
+  const courierCost=Number(quote.courierCost);
+  if(!Number.isFinite(courierCost)||courierCost<0)throw Error('Ongkir aktual kurir tidak valid.');
+  const additionalKm=Math.ceil(distanceKm-c.REGULAR_RADIUS_KM);
+  const patientPrice=Math.round(courierCost+(additionalKm*Number(c.EXTRA_KM_RATE)));
+  return{ok:true,distance_km:distanceKm,patient_price:patientPrice,base_fare:patientPrice,courier_cost:courierCost,quotation_id:quote.quotationId||'',additional_km:additionalKm,pricing_mode:'LALAMOVE_QUOTE_PLUS_DISTANCE',discount_amount:0,total_bayar:patientPrice};
 }
